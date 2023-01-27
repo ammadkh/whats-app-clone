@@ -22,12 +22,10 @@ export default function StartUpScreen() {
       const { token, userId, expiryDate: expiryDateString } = parsedData;
       const expiryDate = new Date(expiryDateString);
       if (!token || !userId || expiryDate <= new Date()) {
-        console.log("fff");
         dispatch(didTryAutoLogin());
         return;
       }
       const userData = await getUser(userId);
-      console.log(userData, "kkk");
       dispatch(authenticate({ token, userData }));
     };
     tryLogin();

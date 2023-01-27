@@ -18,10 +18,12 @@ const authSlice = createSlice({
       state.didTryAutoLogin = true;
     },
     logout: (state, action) => {
-      console.log("on logout");
       state.token = null;
       state.userData = null;
       state.didTryAutoLogin = false;
+    },
+    updateUserInformation: (state, action) => {
+      state.userData = { ...state.userData, ...action.payload.newData };
     },
   },
 });
@@ -29,4 +31,5 @@ const authSlice = createSlice({
 export const authenticate = authSlice.actions.authenticate;
 export const didTryAutoLogin = authSlice.actions.didTryAutoLogin;
 export const logout = authSlice.actions.logout;
+export const updateUserInformation = authSlice.actions.updateUserInformation;
 export default authSlice.reducer;

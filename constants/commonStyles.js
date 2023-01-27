@@ -4,6 +4,5 @@ export const commonStyles = StyleSheet.create({
   center: {
     alignItems: "center",
     justifyContent: "center",
-    flex: 1,
   },
 });

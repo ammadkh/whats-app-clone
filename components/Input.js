@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import colors from "../constants/colors";
 
 export default function Input(props) {
+  const [value, setValue] = useState(props.initialValue);
   const changeTextHandler = (text) => {
+    setValue(text);
     props.onInputChanged(props.id, text);
   };
   return (
@@ -21,6 +23,7 @@ export default function Input(props) {
           {...props}
           style={styles.input}
           onChangeText={changeTextHandler}
+          value={value}
         ></TextInput>
       </View>
       {props.errorText && (

@@ -5,7 +5,7 @@ import {
 } from "../validation";
 
 export const validateInput = (id, value) => {
-  if (id === "firstName" || id === "lastName") {
+  if (id === "firstName" || id === "lastName" || id === "about") {
     return validationString(id, value);
   } else if (id === "email") {
     return validationEmail(id, value);
