@@ -17,13 +17,17 @@ import PageContainer from "../components/PageContainer";
 import { commonStyles } from "../constants/commonStyles";
 import { searchUser } from "../utils/actions/userActions";
 import DataItem from "../components/DataItem";
+import { useDispatch, useSelector } from "react-redux";
+import { setStoredUsers } from "../store/userSlice";
 
 export default function NewChatScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState();
   const [noResultFound, setNoResultFound] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const userData = useSelector((state) => state.auth.userData);
 
+  const dispatch = useDispatch();
   useEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
@@ -43,19 +47,23 @@ export default function NewChatScreen({ navigation }) {
       }
       setIsLoading(true);
       const searchedUsers = await searchUser(searchTerm);
-      console.log(searchedUsers, "seadc");
+      delete searchedUsers[userData.userId];
       setUsers(searchedUsers);
       if (Object.keys(searchedUsers).length === 0) {
         setNoResultFound(true);
       } else {
         setNoResultFound(false);
+        dispatch(setStoredUsers({ newUser: searchedUsers }));
       }
       setIsLoading(false);
-      //   setUsers({});
-      //   setNoResultFound(true);
     }, 500);
     return () => clearTimeout(delaySearch);
   }, [searchTerm]);
+
+  const onSelectUser = (selectedUserId) => {
+    navigation.navigate("ChatListScreen", { selectedUserId });
+  };
+
   return (
     <PageContainer>
       <View style={styles.searchContainer}>
@@ -78,10 +86,10 @@ export default function NewChatScreen({ navigation }) {
         <FlatList
           data={Object.keys(users)}
           renderItem={(user) => {
-            console.log(user.item, "user3");
             const userData = users[user.item];
             return (
               <DataItem
+                onPress={() => onSelectUser(userData.userId)}
                 title={userData.firstName + " " + userData.lastName}
                 subTitle={userData.about}
                 image={userData.profilePicture}

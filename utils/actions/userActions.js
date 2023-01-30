@@ -36,7 +36,6 @@ export const searchUser = async (search) => {
     );
 
     const snapshot = await get(queryRef);
-    console.log(snapshot, "snapshot");
     if (snapshot.exists()) {
       return snapshot.val();
     }

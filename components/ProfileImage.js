@@ -33,7 +33,6 @@ export default function ProfileImage(props) {
       const uploadedImg = await uploadImageAsync(tempUri);
       setIsLoading(false);
 
-      console.log(uploadedImg, "uploadedImg");
       await updateUser(props.userId, { profilePicture: uploadedImg });
       dispatch(
         updateUserInformation({ newData: { profilePicture: uploadedImg } })

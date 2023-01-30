@@ -24,7 +24,6 @@ export const launchImagePicker = async () => {
 const checkPermission = async () => {
   const permissionResponse =
     await ImagePicker.requestMediaLibraryPermissionsAsync();
-  console.log(permissionResponse, "pr");
   if (!permissionResponse.granted) {
     return Promise.reject("permission is required");
   }

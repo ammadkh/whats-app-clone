@@ -17,7 +17,6 @@ export const formReducer = (state, action) => {
       break;
     }
   }
-  console.log(updatedValidation, "upv");
   return {
     inputValues: updatedValues,
     inputValidities: updatedValidation,

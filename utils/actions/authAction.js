@@ -12,15 +12,12 @@ import { getUser } from "./userActions";
 let timer;
 export const signup = (firstName, lastName, email, password) => {
   return async (dispatch) => {
-    console.log(firstName, lastName, email, password);
     const app = getFirebaseApp();
     const auth = getAuth(app);
     try {
       const res = await createUserWithEmailAndPassword(auth, email, password);
-      console.log(res, "response");
       const { uid, stsTokenManager } = res.user;
       const { accessToken, expirationTime } = stsTokenManager;
-      console.log(uid, "db");
       const userData = await createUser(firstName, lastName, email, uid);
       dispatch(authenticate({ token: accessToken, userData }));
       saveUserToStorage(accessToken, uid, new Date(expirationTime));
@@ -41,15 +38,12 @@ export const signup = (firstName, lastName, email, password) => {
 
 export const signin = (email, password) => {
   return async (dispatch) => {
-    console.log(email, password);
     const app = getFirebaseApp();
     const auth = getAuth(app);
     try {
       const res = await signInWithEmailAndPassword(auth, email, password);
-      console.log(res, "response");
       const { uid, stsTokenManager } = res.user;
       const { accessToken, expirationTime } = stsTokenManager;
-      console.log(uid, "db");
       const userData = await getUser(uid);
       dispatch(authenticate({ token: accessToken, userData }));
       saveUserToStorage(accessToken, uid, new Date(expirationTime));
@@ -94,13 +88,13 @@ const createUser = async (firstName, lastName, email, userId) => {
     userId,
     signUpDate: new Date().toISOString(),
   };
-  const childRef = ref(dbRef, `users/${userId}`);
+  const db = getDatabase();
+  const childRef = ref(db, `users/${userId}`);
   await set(childRef, userData);
   return userData;
 };
 
 const saveUserToStorage = async (token, userId, expiryDate) => {
-  console.log(expiryDate, "ex date");
   await AsyncStorage.setItem(
     "user",
     JSON.stringify({ token, userId, expiryDate: expiryDate.toISOString() })

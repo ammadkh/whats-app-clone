@@ -6,6 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import AppNavigator from "./navigations/AppNavigator";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
+import { MenuProvider } from "react-native-popup-menu";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 LogBox.ignoreLogs(["AsyncStorage has been extracted"]);
@@ -29,7 +30,9 @@ export default function App() {
   return (
     <Provider store={store}>
       <SafeAreaProvider onLayout={onLayoutRootView}>
-        <AppNavigator />
+        <MenuProvider>
+          <AppNavigator />
+        </MenuProvider>
       </SafeAreaProvider>
     </Provider>
   );

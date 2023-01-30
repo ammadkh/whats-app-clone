@@ -35,7 +35,6 @@ export default function SignUpForm() {
     (id, value) => {
       const result = validateInput(id, value);
       dispatchFormState({ id, validationResult: result, inputValue: value });
-      console.log(result);
     },
     [dispatchFormState]
   );

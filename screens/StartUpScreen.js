@@ -18,7 +18,6 @@ export default function StartUpScreen() {
         return;
       }
       const parsedData = JSON.parse(storedAuthInfo);
-      console.log(parsedData, "parsed data");
       const { token, userId, expiryDate: expiryDateString } = parsedData;
       const expiryDate = new Date(expiryDateString);
       if (!token || !userId || expiryDate <= new Date()) {

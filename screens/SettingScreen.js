@@ -21,7 +21,6 @@ export default function SettingScreen() {
   const [successMsg, setSuccessMsg] = useState(false);
   const [isLoading, setIsLoading] = useState("");
   const userData = useSelector((state) => state.auth.userData);
-  console.log(userData, "user data");
   const firstName = userData.firstName;
   const lastName = userData.lastName;
   const email = userData.email;
@@ -57,7 +56,6 @@ export default function SettingScreen() {
     (id, value) => {
       const result = validateInput(id, value);
       dispatchFormState({ id, validationResult: result, inputValue: value });
-      console.log(result);
     },
     [dispatchFormState]
   );

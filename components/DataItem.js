@@ -6,7 +6,7 @@ import ProfileImage from "./ProfileImage";
 export default function DataItem(props) {
   const { title, subTitle, image } = props;
   return (
-    <TouchableWithoutFeedback>
+    <TouchableWithoutFeedback onPress={props.onPress}>
       <View style={styles.container}>
         <ProfileImage size={40} uri={image}></ProfileImage>
         <View style={styles.textContainer}>
