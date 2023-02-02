@@ -1,4 +1,12 @@
-import { getDatabase, push, ref, update } from "firebase/database";
+import {
+  get,
+  getDatabase,
+  push,
+  ref,
+  remove,
+  set,
+  update,
+} from "firebase/database";
 import { getFirebaseApp } from "../firebaseHelper";
 
 export const createChat = async (loggedInUserId, chatData) => {
@@ -23,7 +31,26 @@ export const createChat = async (loggedInUserId, chatData) => {
   return newChat.key;
 };
 
-export const sendTextMessage = async (chatId, senderId, textMessage) => {
+export const sendTextMessage = async (
+  chatId,
+  senderId,
+  textMessage,
+  replyTo
+) => {
+  sendMessages(chatId, senderId, textMessage, null, replyTo);
+};
+
+export const sendImgMessage = async (chatId, senderId, imageUrl, replyTo) => {
+  sendMessages(chatId, senderId, "image", imageUrl, replyTo);
+};
+
+const sendMessages = async (
+  chatId,
+  senderId,
+  textMessage,
+  imageUrl,
+  replyTo
+) => {
   const app = getFirebaseApp();
   const db = getDatabase(app);
 
@@ -33,6 +60,12 @@ export const sendTextMessage = async (chatId, senderId, textMessage) => {
     sentAt: new Date().toISOString(),
     text: textMessage,
   };
+  if (!!replyTo) {
+    messageData.replyTo = replyTo;
+  }
+  if (!!imageUrl) {
+    messageData.imageUrl = imageUrl;
+  }
   await push(messageRef, messageData);
   const chatRef = ref(db, `chats/${chatId}`);
   await update(chatRef, {
@@ -40,4 +73,33 @@ export const sendTextMessage = async (chatId, senderId, textMessage) => {
     updatedAt: new Date().toISOString(),
     lastTextMessage: textMessage,
   });
+};
+
+export const starMessages = async (userId, chatId, messageId) => {
+  try {
+    const app = getFirebaseApp();
+    const db = getDatabase(app);
+
+    const starMessageRef = ref(
+      db,
+      `userStarMessages/${userId}/${chatId}/${messageId}`
+    );
+
+    const snapshot = await get(starMessageRef);
+    if (snapshot.exists()) {
+      console.log("unstarring");
+      await remove(starMessageRef);
+    } else {
+      const starMessageData = {
+        chatId,
+        messageId,
+        starAt: new Date().toISOString(),
+      };
+      await set(starMessageRef, starMessageData);
+
+      console.log("starring");
+    }
+  } catch (error) {
+    console.log(error);
+  }
 };

@@ -14,7 +14,7 @@ import { ActivityIndicator, View } from "react-native";
 import colors from "../constants/colors";
 import { commonStyles } from "../constants/commonStyles";
 import { setStoredUsers } from "../store/userSlice";
-import { setMessagesData } from "../store/messageSlice";
+import { setMessagesData, setStarredMessage } from "../store/messageSlice";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -85,7 +85,6 @@ export default function MainNavigator() {
     const refs = [userChatRef];
     let chatFountCount = 0;
     onValue(userChatRef, (querySnapshot) => {
-      console.log("on subs user chat ref");
       const chatIdsData = querySnapshot.val() || {};
       const chatIds = Object.values(chatIdsData);
       const chatsData = {};
@@ -102,7 +101,7 @@ export default function MainNavigator() {
             const users = data.users;
             for (let i = 0; i < users.length; i++) {
               const user = users[i];
-              if (user !== userId && !storedUsers[user]) {
+              if (!storedUsers[user]) {
                 try {
                   const userNewData = await get(ref(db, `users/${user}`));
                   const userDataVal = userNewData.val();
@@ -133,6 +132,13 @@ export default function MainNavigator() {
       if (chatFountCount === 0) {
         setIsLoading(false);
       }
+    });
+
+    const starredMessageRef = ref(db, `userStarMessages/${userId}`);
+    refs.push(starredMessageRef);
+    onValue(starredMessageRef, (querySnapshot) => {
+      const starredMessages = querySnapshot.val() ?? {};
+      dispatch(setStarredMessage({ starredMessages }));
     });
     return () => {
       refs.forEach((ref) => off(ref));

@@ -50,11 +50,12 @@ export default function ChatListScreen(props) {
         renderItem={({ item }) => {
           const otherUser = item.users.find((user) => user !== userData.userId);
           const otherUserData = storedUsers[otherUser];
-
+          console.log(otherUserData, "other  suer data");
           return (
             <DataItem
               title={otherUserData?.fullName}
               subTitle={item.lastTextMessage || "new chat"}
+              image={otherUserData?.profilePicture}
               onPress={() =>
                 navigation.navigate("chat screen", { chatId: item.key })
               }

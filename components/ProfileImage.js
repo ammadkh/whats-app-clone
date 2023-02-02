@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -19,11 +19,16 @@ import { updateUserInformation } from "../store/authSlice";
 import { commonStyles } from "../constants/commonStyles";
 
 export default function ProfileImage(props) {
+  console.log("source", props);
   const source = props.uri ? { uri: props.uri } : userImage;
   const showEditButton = props.showEditButton;
   const [isLoading, setIsLoading] = useState(false);
   const [image, setImage] = useState(source);
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    setImage(props.uri ? { uri: props.uri } : userImage);
+  }, [props.uri]);
   const imageHandler = async () => {
     try {
       const tempUri = await launchImagePicker();
