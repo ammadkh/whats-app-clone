@@ -45,7 +45,7 @@ function formatDate(date) {
 }
 
 export default function Bubble(props) {
-  console.log(props, "bubble");
+  console.log(props, "pop");
   const starredMessages = useSelector(
     (state) => state.messages.starredMessages[props?.chatId] ?? {}
   );
@@ -61,7 +61,7 @@ export default function Bubble(props) {
   let isUsermessage = false;
   switch (props.type) {
     case "system":
-      textStyle.color = "65644A";
+      textStyle.color = "#65644A";
       bubbleStyle.backgroundColor = colors.beige;
       bubbleStyle.alignItems = "center";
       bubbleStyle.marginTop = 10;
@@ -88,6 +88,12 @@ export default function Bubble(props) {
     case "reply":
       bubbleStyle.backgroundColor = "#F2F2F2";
       break;
+    case "info":
+      textStyle.color = "#65644A";
+      bubbleStyle.backgroundColor = colors.beige;
+      bubbleStyle.alignItems = "center";
+      bubbleStyle.marginTop = 10;
+      break;
     default:
       break;
   }
@@ -95,7 +101,6 @@ export default function Bubble(props) {
   const copyToClipboard = async (text) => {
     await Clipboard.setStringAsync(text);
   };
-  console.log(storedUser, "suu");
   const replyingToUser =
     props?.replyingTo && storedUser[props.replyingTo.messages.sentBy];
 
@@ -121,7 +126,9 @@ export default function Bubble(props) {
         style={{ width: "100%" }}
       >
         <View style={bubbleStyle}>
-          {props.name && <Text style={styles.name}>{props?.name}</Text>}
+          {props.name && props.type != "info" && (
+            <Text style={styles.name}>{props?.name}</Text>
+          )}
           {replyingToUser && (
             <Bubble
               type="reply"
@@ -136,7 +143,7 @@ export default function Bubble(props) {
               style={{ width: 200, height: 200, marginBottom: 5 }}
             ></Image>
           )}
-          {props.date && (
+          {props.date && props.type != "info" && (
             <View style={styles.timeContainer}>
               {isStarred && (
                 <FontAwesome
@@ -210,5 +217,6 @@ const styles = StyleSheet.create({
   },
   name: {
     fontWeight: "500",
+    fontSize: 15,
   },
 });

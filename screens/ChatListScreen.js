@@ -1,5 +1,12 @@
 import React, { useEffect } from "react";
-import { Text, View, StyleSheet, Button, FlatList } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Button,
+  FlatList,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { HeaderButtons, Item } from "react-navigation-header-buttons";
 import { useSelector } from "react-redux";
@@ -7,6 +14,7 @@ import CustomHeaderButtton from "../components/CustomHeaderButtton";
 import DataItem from "../components/DataItem";
 import PageContainer from "../components/PageContainer";
 import PageTitle from "../components/PageTitle";
+import colors from "../constants/colors";
 
 export default function ChatListScreen(props) {
   const { navigation, route } = props;
@@ -23,6 +31,9 @@ export default function ChatListScreen(props) {
     );
   });
   const selectedUserId = route.params?.selectedUserId;
+  const selectedUsers = route.params?.selectedUsers;
+  const chatName = route.params?.chatName;
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -38,24 +49,64 @@ export default function ChatListScreen(props) {
   }, []);
 
   useEffect(() => {
-    if (!selectedUserId) return;
-    const chatUsers = [selectedUserId, userData.userId];
-    navigation.navigate("chat screen", { chatUsers: { users: chatUsers } });
+    if (selectedUserId || selectedUsers) {
+      let chatData;
+      if (selectedUserId) {
+        chatData = chatsData.find(
+          (c) => !c.isGroupChat && c.users.includes(selectedUserId)
+        );
+      }
+      if (chatData) {
+        navigation.navigate("chat screen", {
+          chatId: chatData.key,
+        });
+      } else {
+        const chatUsers = selectedUsers || [selectedUserId];
+        if (!chatUsers.includes(userData.userId)) {
+          chatUsers.push(userData.userId);
+        }
+        navigation.navigate("chat screen", {
+          chatUsers: {
+            users: chatUsers,
+            chatName,
+            isGroupChat: selectedUsers !== undefined,
+          },
+        });
+      }
+    }
   }, [route.params]);
   return (
     <PageContainer>
       <PageTitle text="Chats"></PageTitle>
+      <TouchableOpacity
+        style={styles.groupChatContainer}
+        onPress={() =>
+          navigation.navigate("newChatScreen", { isGroupChat: true })
+        }
+      >
+        <Text style={styles.groupChat}>Group Chat</Text>
+      </TouchableOpacity>
       <FlatList
         data={chatsData}
         renderItem={({ item }) => {
-          const otherUser = item.users.find((user) => user !== userData.userId);
-          const otherUserData = storedUsers[otherUser];
-          console.log(otherUserData, "other  suer data");
+          let title;
+          let image;
+          if (item.isGroupChat) {
+            title = item.chatName;
+            image = item.chatImage;
+          } else {
+            const otherUser = item.users.find(
+              (user) => user !== userData.userId
+            );
+            const otherUserData = storedUsers[otherUser];
+            title = otherUserData?.fullName;
+            image = otherUserData?.profilePicture;
+          }
           return (
             <DataItem
-              title={otherUserData?.fullName}
+              title={title}
               subTitle={item.lastTextMessage || "new chat"}
-              image={otherUserData?.profilePicture}
+              image={image}
               onPress={() =>
                 navigation.navigate("chat screen", { chatId: item.key })
               }
@@ -75,5 +126,12 @@ const styles = StyleSheet.create({
   txt: {
     fontFamily: "Roboto-Black",
     fontSize: 30,
+  },
+  groupChatContainer: {
+    marginBottom: 5,
+  },
+  groupChat: {
+    color: colors.blue,
+    fontSize: 17,
   },
 });

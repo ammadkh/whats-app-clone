@@ -17,14 +17,17 @@ import { updateUser } from "../utils/actions/authAction";
 import { useDispatch } from "react-redux";
 import { updateUserInformation } from "../store/authSlice";
 import { commonStyles } from "../constants/commonStyles";
+import { updateChatData } from "../utils/actions/chatAction";
 
 export default function ProfileImage(props) {
-  console.log("source", props);
   const source = props.uri ? { uri: props.uri } : userImage;
   const showEditButton = props.showEditButton;
+  const showCancelButton = props.showCancelButton;
   const [isLoading, setIsLoading] = useState(false);
   const [image, setImage] = useState(source);
   const dispatch = useDispatch();
+
+  const chatId = props.chatId;
 
   useEffect(() => {
     setImage(props.uri ? { uri: props.uri } : userImage);
@@ -35,23 +38,27 @@ export default function ProfileImage(props) {
       if (!tempUri) return;
       setImage({ uri: tempUri });
       setIsLoading(true);
-      const uploadedImg = await uploadImageAsync(tempUri);
+      const uploadedImg = await uploadImageAsync(tempUri, chatId != undefined);
       setIsLoading(false);
+      if (chatId) {
+        await updateChatData(chatId, props.userId, { chatImage: uploadedImg });
+      } else {
+        await updateUser(props.userId, { profilePicture: uploadedImg });
+        dispatch(
+          updateUserInformation({ newData: { profilePicture: uploadedImg } })
+        );
+      }
 
-      await updateUser(props.userId, { profilePicture: uploadedImg });
-      dispatch(
-        updateUserInformation({ newData: { profilePicture: uploadedImg } })
-      );
       setImage({ uri: uploadedImg });
     } catch (error) {
       console.log(error, "we");
       setIsLoading(false);
     }
   };
-  const Contianer = showEditButton ? TouchableOpacity : View;
+  const Contianer = props.onPress || showEditButton ? TouchableOpacity : View;
 
   return (
-    <Contianer onPress={imageHandler}>
+    <Contianer onPress={props.onPress || imageHandler} style={props.style}>
       {isLoading ? (
         <View
           width={props.size}
@@ -76,6 +83,11 @@ export default function ProfileImage(props) {
               <FontAwesome name="pencil" size={16} color="black" />
             </View>
           )}
+          {showCancelButton && (
+            <View style={styles.closeContainer}>
+              <FontAwesome name="close" size={12} color="black" />
+            </View>
+          )}
         </>
       )}
     </Contianer>
@@ -95,5 +107,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lightGray,
     padding: 8,
     borderRadius: 20,
+  },
+  closeContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.lightGray,
+    padding: 4,
+    borderRadius: 50,
   },
 });

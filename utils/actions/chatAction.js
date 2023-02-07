@@ -8,6 +8,7 @@ import {
   update,
 } from "firebase/database";
 import { getFirebaseApp } from "../firebaseHelper";
+import { deleteUserChats, getUserChats } from "./userActions";
 
 export const createChat = async (loggedInUserId, chatData) => {
   const newChatData = {
@@ -31,17 +32,40 @@ export const createChat = async (loggedInUserId, chatData) => {
   return newChat.key;
 };
 
+export const updateChatData = async (chatId, userId, chatData) => {
+  const app = getFirebaseApp();
+  const db = getDatabase(app);
+  const updatedChatData = {
+    ...chatData,
+    updatedAt: new Date().toISOString(),
+    updateBy: userId,
+  };
+  console.log(updatedChatData, "updatedChatData");
+  try {
+    const updatedChat = await update(
+      ref(db, `chats/${chatId}`),
+      updatedChatData
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const sendInfoMessage = async (chatId, senderId, textMessage) => {
+  sendMessages(chatId, senderId, textMessage, null, null, "info");
+};
+
 export const sendTextMessage = async (
   chatId,
   senderId,
   textMessage,
   replyTo
 ) => {
-  sendMessages(chatId, senderId, textMessage, null, replyTo);
+  sendMessages(chatId, senderId, textMessage, null, replyTo, null);
 };
 
 export const sendImgMessage = async (chatId, senderId, imageUrl, replyTo) => {
-  sendMessages(chatId, senderId, "image", imageUrl, replyTo);
+  sendMessages(chatId, senderId, "image", imageUrl, replyTo, null);
 };
 
 const sendMessages = async (
@@ -49,7 +73,8 @@ const sendMessages = async (
   senderId,
   textMessage,
   imageUrl,
-  replyTo
+  replyTo,
+  type
 ) => {
   const app = getFirebaseApp();
   const db = getDatabase(app);
@@ -65,6 +90,9 @@ const sendMessages = async (
   }
   if (!!imageUrl) {
     messageData.imageUrl = imageUrl;
+  }
+  if (!!type) {
+    messageData.type = type;
   }
   await push(messageRef, messageData);
   const chatRef = ref(db, `chats/${chatId}`);
@@ -102,4 +130,33 @@ export const starMessages = async (userId, chatId, messageId) => {
   } catch (error) {
     console.log(error);
   }
+};
+
+export const removeUserFromChat = async (
+  loggedInUserData,
+  removedUserData,
+  chatData
+) => {
+  const removedUserId = removedUserData.userId;
+  const newUser = chatData.users.filter((user) => user !== removedUserId);
+  await updateChatData(chatData.key, loggedInUserData.userId, {
+    users: newUser,
+  });
+
+  const userChats = await getUserChats(removedUserData.userId);
+  for (let key in userChats) {
+    const currentUserChat = userChats[key];
+    if (currentUserChat === chatData.key) {
+      console.log(chatData, "current user chat");
+      await deleteUserChats(removedUserData.userId, key);
+      break;
+    }
+  }
+  let infoMessage;
+  if (loggedInUserData.userId === removedUserData.userId) {
+    infoMessage = `${loggedInUserData.fullName} left the chat.`;
+  } else {
+    infoMessage = `${loggedInUserData.fullName} removed ${removedUserData.fullName} from chat.`;
+  }
+  await sendInfoMessage(chatData.key, loggedInUserData.userId, infoMessage);
 };

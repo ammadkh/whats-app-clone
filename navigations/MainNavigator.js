@@ -15,6 +15,8 @@ import colors from "../constants/colors";
 import { commonStyles } from "../constants/commonStyles";
 import { setStoredUsers } from "../store/userSlice";
 import { setMessagesData, setStarredMessage } from "../store/messageSlice";
+import ContactScreen from "../screens/ContactScreen";
+import ChatSetting from "../screens/ChatSetting";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -60,12 +62,23 @@ const StackNavigator = () => {
           component={ChatScreen}
           options={{ headerShown: true }}
         />
-        <Stack.Screen name="Setting" component={SettingScreen} />
+        <Stack.Screen
+          name="chatSetting"
+          component={ChatSetting}
+          options={{ headerTitle: "", headerShadowVisible: false }}
+        />
       </Stack.Group>
       <Stack.Group screenOptions={{ presentation: "containedModal" }}>
         <Stack.Screen
           name="newChatScreen"
           component={NewChatScreen}
+          options={{ headerShown: true }}
+        />
+      </Stack.Group>
+      <Stack.Group>
+        <Stack.Screen
+          name="ContactScreen"
+          component={ContactScreen}
           options={{ headerShown: true }}
         />
       </Stack.Group>
@@ -96,6 +109,9 @@ export default function MainNavigator() {
           chatFountCount++;
           const data = chatSnapshot.val();
           if (data) {
+            if (!data.users.includes(userId)) {
+              return;
+            }
             data.key = chatSnapshot.key;
             chatsData[chatSnapshot.key] = data;
             const users = data.users;

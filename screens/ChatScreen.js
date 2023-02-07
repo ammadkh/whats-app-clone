@@ -31,9 +31,12 @@ import {
   uploadImageAsync,
 } from "../utils/ImagePickerHelper";
 import AwesomeAlert from "react-native-awesome-alerts";
+import { HeaderButtons, Item } from "react-navigation-header-buttons";
+import CustomHeaderButtton from "../components/CustomHeaderButtton";
 
 export default function ChatScreen(props) {
   const [chatId, setChatId] = useState(props.route.params.chatId);
+
   const storedUsers = useSelector((state) => state.users.storedUsers);
   const userData = useSelector((state) => state.auth.userData);
   const [replyTo, setReplyTo] = useState();
@@ -59,7 +62,7 @@ export default function ChatScreen(props) {
   const [errorBannerText, setErrorBannerText] = useState();
   const chatsData = useSelector((state) => state.chat.chatsData);
   const chatsUsers =
-    (chatId && chatsData[chatId]) || props.route.params?.chatUsers;
+    (chatId && chatsData[chatId]) || props.route.params?.chatUsers || {};
 
   const getNameFromUserData = () => {
     const otherUserId = chatsUsers.users?.find(
@@ -70,22 +73,44 @@ export default function ChatScreen(props) {
       otherUserData && `${otherUserData.firstName} ${otherUserData.lastName}`
     );
   };
-
   useEffect(() => {
+    if (!chatsUsers) return;
+    const title = chatsUsers?.chatName ?? getNameFromUserData();
     props.navigation.setOptions({
-      headerTitle: getNameFromUserData(),
+      headerTitle: title,
+      headerRight: () => (
+        <HeaderButtons HeaderButtonComponent={CustomHeaderButtton}>
+          {chatId && (
+            <Item
+              iconName="settings-outline"
+              onPress={() => {
+                chatsUsers.isGroupChat
+                  ? props.navigation.navigate("chatSetting", {
+                      chatId,
+                    })
+                  : props.navigation.navigate("ContactScreen", {
+                      uid: chatsUsers.users?.find(
+                        (user) => user !== userData.userId
+                      ),
+                    });
+              }}
+              color={colors.grey}
+            />
+          )}
+        </HeaderButtons>
+      ),
     });
   }, [props.navigation, chatsUsers, storedUsers, userData]);
   const [messageText, setMessageText] = useState("");
   const sendMessage = useCallback(async () => {
     try {
+      let id;
       if (!chatId) {
-        const id = await createChat(userData.userId, chatsUsers);
+        id = await createChat(userData.userId, chatsUsers);
         setChatId(id);
-        return;
       }
       await sendTextMessage(
-        chatId,
+        id,
         userData.userId,
         messageText,
         replyTo && replyTo.key
@@ -176,7 +201,16 @@ export default function ChatScreen(props) {
                 data={messagesData}
                 renderItem={({ item }) => {
                   const isOwnMsg = item?.messages.sentBy === userData.userId;
-                  const msgType = isOwnMsg ? "myMessage" : "theirMessage";
+                  let msgType;
+                  if (item && item.messages.type === "info") {
+                    msgType = "info";
+                  } else if (isOwnMsg) {
+                    msgType = "myMessage";
+                  } else {
+                    msgType = "theirMessage";
+                  }
+                  const sender =
+                    item?.messages.sentBy && storedUsers[item?.messages.sentBy];
                   return (
                     <Bubble
                       type={msgType}
@@ -184,6 +218,11 @@ export default function ChatScreen(props) {
                       userId={userData.userId}
                       chatId={chatId}
                       messageId={item.key}
+                      name={
+                        !chatsUsers.isGroupChat || isOwnMsg
+                          ? undefined
+                          : sender.fullName
+                      }
                       date={new Date(item.messages.sentAt)}
                       onReply={() => setReplyTo(item)}
                       replyingTo={

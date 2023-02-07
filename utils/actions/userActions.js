@@ -5,6 +5,7 @@ import {
   orderByChild,
   query,
   ref,
+  remove,
   startAt,
 } from "firebase/database";
 import { async } from "validate.js";
@@ -17,6 +18,30 @@ export const getUser = async (userId) => {
     const userRef = ref(db, `users/${userId}`);
     const res = await get(userRef);
     return res?.val();
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const getUserChats = async (userId) => {
+  try {
+    const app = getFirebaseApp();
+    const db = getDatabase(app);
+    const userRef = ref(db, `userChat/${userId}`);
+    const res = await get(userRef);
+    return res?.val();
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const deleteUserChats = async (userId, chatId) => {
+  try {
+    console.log(userId, chatId, "xxxxxxxx");
+    const app = getFirebaseApp();
+    const db = getDatabase(app);
+    const userRef = ref(db, `userChat/${userId}/${chatId}`);
+    await remove(userRef);
   } catch (error) {
     console.log(error);
   }
