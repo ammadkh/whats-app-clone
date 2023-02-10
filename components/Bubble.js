@@ -45,7 +45,6 @@ function formatDate(date) {
 }
 
 export default function Bubble(props) {
-  console.log(props, "pop");
   const starredMessages = useSelector(
     (state) => state.messages.starredMessages[props?.chatId] ?? {}
   );
