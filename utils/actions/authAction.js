@@ -8,7 +8,7 @@ import { getDatabase, ref, set, child, update, push } from "firebase/database";
 import { async } from "validate.js";
 import { authenticate, logout } from "../../store/authSlice";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getUser } from "./userActions";
+import { getUser, removePushToken, savePushToken } from "./userActions";
 let timer;
 export const signup = (firstName, lastName, email, password) => {
   return async (dispatch) => {
@@ -19,6 +19,7 @@ export const signup = (firstName, lastName, email, password) => {
       const { uid, stsTokenManager } = res.user;
       const { accessToken, expirationTime } = stsTokenManager;
       const userData = await createUser(firstName, lastName, email, uid);
+      await savePushToken(userData);
       dispatch(authenticate({ token: accessToken, userData }));
       saveUserToStorage(accessToken, uid, new Date(expirationTime));
       timer = setTimeout(() => {
@@ -45,6 +46,7 @@ export const signin = (email, password) => {
       const { uid, stsTokenManager } = res.user;
       const { accessToken, expirationTime } = stsTokenManager;
       const userData = await getUser(uid);
+      await savePushToken(userData);
       dispatch(authenticate({ token: accessToken, userData }));
       saveUserToStorage(accessToken, uid, new Date(expirationTime));
       const expirationTimeInMiliSecond = new Date(expirationTime) - new Date();
@@ -101,8 +103,13 @@ const saveUserToStorage = async (token, userId, expiryDate) => {
   );
 };
 
-export const logoutUser = () => {
+export const logoutUser = (userData) => {
   return async (dispatch) => {
+    try {
+      await removePushToken(userData);
+    } catch (error) {
+      console.log(error);
+    }
     await AsyncStorage.clear();
     clearTimeout(timer);
     dispatch(logout());

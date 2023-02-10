@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import ChatListScreen from "../screens/ChatListScreen";
 import SettingScreen from "../screens/SettingScreen";
@@ -17,6 +17,12 @@ import { setStoredUsers } from "../store/userSlice";
 import { setMessagesData, setStarredMessage } from "../store/messageSlice";
 import ContactScreen from "../screens/ContactScreen";
 import ChatSetting from "../screens/ChatSetting";
+import DataListScreen from "../screens/DataListScreen";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import { StackActions, useNavigation } from "@react-navigation/native";
+import { createNavigationContainerRef } from "@react-navigation/native";
+import * as RootNavigation from "./RootNavigation.js";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -67,6 +73,11 @@ const StackNavigator = () => {
           component={ChatSetting}
           options={{ headerTitle: "", headerShadowVisible: false }}
         />
+        <Stack.Screen
+          name="dataList"
+          component={DataListScreen}
+          options={{ headerTitle: "", headerShadowVisible: false }}
+        />
       </Stack.Group>
       <Stack.Group screenOptions={{ presentation: "containedModal" }}>
         <Stack.Screen
@@ -88,9 +99,47 @@ const StackNavigator = () => {
 
 export default function MainNavigator() {
   const dispatch = useDispatch();
+  const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(true);
   const userId = useSelector((state) => state.auth.userData.userId);
   const storedUsers = useSelector((state) => state.users.storedUsers);
+
+  const [expoPushToken, setExpoPushToken] = useState("");
+  const [notification, setNotification] = useState(false);
+  const notificationListener = useRef();
+  const responseListener = useRef();
+
+  useEffect(() => {
+    registerForPushNotificationsAsync().then((token) => {
+      setExpoPushToken(token);
+      console.log("toke", token);
+    });
+
+    notificationListener.current =
+      Notifications.addNotificationReceivedListener((notification) => {
+        // handle received notification
+      });
+
+    responseListener.current =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const { chatId } =
+          response.notification.request.content.data || undefined;
+        if (chatId) {
+          const pushAction = StackActions.push("chat screen", { chatId });
+          navigation.dispatch(pushAction);
+        } else {
+          console.log("no chat id sent with notification");
+        }
+      });
+
+    return () => {
+      Notifications.removeNotificationSubscription(
+        notificationListener.current
+      );
+      Notifications.removeNotificationSubscription(responseListener.current);
+    };
+  }, []);
+
   useEffect(() => {
     const app = getFirebaseApp();
     const db = getDatabase(app);
@@ -171,4 +220,37 @@ export default function MainNavigator() {
     );
   }
   return <StackNavigator></StackNavigator>;
+}
+
+async function registerForPushNotificationsAsync() {
+  let token;
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#FF231F7C",
+    });
+  }
+
+  if (Device.isDevice) {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== "granted") {
+      alert("Failed to get push token for push notification!");
+      return;
+    }
+    token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log(token);
+  } else {
+    alert("Must use physical device for Push Notifications");
+  }
+
+  return token;
 }

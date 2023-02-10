@@ -36,7 +36,6 @@ import CustomHeaderButtton from "../components/CustomHeaderButtton";
 
 export default function ChatScreen(props) {
   const [chatId, setChatId] = useState(props.route.params.chatId);
-
   const storedUsers = useSelector((state) => state.users.storedUsers);
   const userData = useSelector((state) => state.auth.userData);
   const [replyTo, setReplyTo] = useState();
@@ -108,16 +107,19 @@ export default function ChatScreen(props) {
       if (!chatId) {
         id = await createChat(userData.userId, chatsUsers);
         setChatId(id);
+      } else {
+        id = chatId;
       }
       await sendTextMessage(
         id,
-        userData.userId,
+        userData,
         messageText,
-        replyTo && replyTo.key
+        replyTo && replyTo.key,
+        chatsUsers
       );
       setReplyTo(null);
     } catch (error) {
-      console.log(error, "ss");
+      console.log(error);
       setErrorBannerText("Message is not sent. Try again");
       setTimeout(() => {
         setErrorBannerText(null);
@@ -157,9 +159,10 @@ export default function ChatScreen(props) {
       const uploadedImgUrl = await uploadImageAsync(tempImgUri, true);
       await sendImgMessage(
         chatId ?? id,
-        userData.userId,
+        userData,
         uploadedImgUrl,
-        replyTo && replyTo.key
+        replyTo && replyTo.key,
+        chatsUsers
       );
       setIsLoading(false);
       setReplyTo(null);

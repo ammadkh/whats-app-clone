@@ -51,7 +51,7 @@ export default function ProfileImage(props) {
 
       setImage({ uri: uploadedImg });
     } catch (error) {
-      console.log(error, "we");
+      console.log(error);
       setIsLoading(false);
     }
   };

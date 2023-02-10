@@ -1,4 +1,4 @@
-import React, { useReducer, useState, useCallback } from "react";
+import React, { useReducer, useState, useCallback, useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import PageTitle from "../components/PageTitle";
 import PageContainer from "../components/PageContainer";
@@ -13,18 +13,32 @@ import { useDispatch, useSelector } from "react-redux";
 import { logoutUser, updateUser } from "../utils/actions/authAction";
 import { updateUserInformation } from "../store/authSlice";
 import ProfileImage from "../components/ProfileImage";
+import DataItem from "../components/DataItem";
 // Import the functions you need from the SDKs you need
 
-export default function SettingScreen() {
+export default function SettingScreen(props) {
   const dispatch = useDispatch();
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState(false);
   const [isLoading, setIsLoading] = useState("");
   const userData = useSelector((state) => state.auth.userData);
+  const starredMessages = useSelector(
+    (state) => state.messages.starredMessages
+  );
   const firstName = userData.firstName;
   const lastName = userData.lastName;
   const email = userData.email;
   const about = userData.about;
+
+  const sortedStarredMsgs = useMemo(() => {
+    let result = [];
+    const chats = Object.values(starredMessages);
+    chats.forEach((chat) => {
+      const chatMessage = Object.values(chat);
+      result = result.concat(chatMessage);
+    });
+    return result;
+  }, [starredMessages]);
 
   const initialState = {
     inputValues: {
@@ -123,6 +137,18 @@ export default function SettingScreen() {
             onInputChanged={onInputChanged}
             errorText={formState.inputValidities["about"]}
           />
+          <DataItem
+            title="Starred Messages"
+            hideImage={true}
+            type="link"
+            onPress={() =>
+              props.navigation.navigate("dataList", {
+                title: "Starred Messages",
+                data: sortedStarredMsgs,
+                type: "messages",
+              })
+            }
+          ></DataItem>
           <View style={{ marginTop: 20 }}>
             {successMsg && <Text>Saved!</Text>}
             {isLoading ? (
@@ -145,7 +171,7 @@ export default function SettingScreen() {
             )}
             <SubmitButton
               color={"red"}
-              onPress={() => dispatch(logoutUser())}
+              onPress={() => dispatch(logoutUser(userData))}
               style={{ marginTop: 10 }}
               title="Logout"
             />

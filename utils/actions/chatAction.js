@@ -8,7 +8,12 @@ import {
   update,
 } from "firebase/database";
 import { getFirebaseApp } from "../firebaseHelper";
-import { deleteUserChats, getUserChats } from "./userActions";
+import {
+  addUserChats,
+  deleteUserChats,
+  getUserChats,
+  getUserPushToken,
+} from "./userActions";
 
 export const createChat = async (loggedInUserId, chatData) => {
   const newChatData = {
@@ -40,7 +45,6 @@ export const updateChatData = async (chatId, userId, chatData) => {
     updatedAt: new Date().toISOString(),
     updateBy: userId,
   };
-  console.log(updatedChatData, "updatedChatData");
   try {
     const updatedChat = await update(
       ref(db, `chats/${chatId}`),
@@ -57,15 +61,29 @@ export const sendInfoMessage = async (chatId, senderId, textMessage) => {
 
 export const sendTextMessage = async (
   chatId,
-  senderId,
+  senderInfo,
   textMessage,
-  replyTo
+  replyTo,
+  chatData
 ) => {
-  sendMessages(chatId, senderId, textMessage, null, replyTo, null);
+  sendMessages(chatId, senderInfo.userId, textMessage, null, replyTo, null);
+  sendPushNotificationsToUsers(
+    chatData,
+    senderInfo.fullName,
+    textMessage,
+    chatId
+  );
 };
 
-export const sendImgMessage = async (chatId, senderId, imageUrl, replyTo) => {
-  sendMessages(chatId, senderId, "image", imageUrl, replyTo, null);
+export const sendImgMessage = async (
+  chatId,
+  senderInfo,
+  imageUrl,
+  replyTo,
+  chatData
+) => {
+  sendMessages(chatId, senderInfo.userId, "image", imageUrl, replyTo, null);
+  sendPushNotificationsToUsers(chatData, senderInfo.fullName, "image", chatId);
 };
 
 const sendMessages = async (
@@ -78,7 +96,6 @@ const sendMessages = async (
 ) => {
   const app = getFirebaseApp();
   const db = getDatabase(app);
-
   const messageRef = ref(db, `messages/${chatId}`);
   const messageData = {
     sentBy: senderId,
@@ -115,7 +132,6 @@ export const starMessages = async (userId, chatId, messageId) => {
 
     const snapshot = await get(starMessageRef);
     if (snapshot.exists()) {
-      console.log("unstarring");
       await remove(starMessageRef);
     } else {
       const starMessageData = {
@@ -124,8 +140,6 @@ export const starMessages = async (userId, chatId, messageId) => {
         starAt: new Date().toISOString(),
       };
       await set(starMessageRef, starMessageData);
-
-      console.log("starring");
     }
   } catch (error) {
     console.log(error);
@@ -147,7 +161,6 @@ export const removeUserFromChat = async (
   for (let key in userChats) {
     const currentUserChat = userChats[key];
     if (currentUserChat === chatData.key) {
-      console.log(chatData, "current user chat");
       await deleteUserChats(removedUserData.userId, key);
       break;
     }
@@ -159,4 +172,57 @@ export const removeUserFromChat = async (
     infoMessage = `${loggedInUserData.fullName} removed ${removedUserData.fullName} from chat.`;
   }
   await sendInfoMessage(chatData.key, loggedInUserData.userId, infoMessage);
+};
+
+export const addUsersToChat = async (
+  loggedInUserData,
+  usersToAddData,
+  chatData
+) => {
+  const existingUsers = chatData.users;
+  const newUsers = [];
+  let addedUser = "";
+  usersToAddData.forEach(async (user) => {
+    if (existingUsers.includes(user.userId)) {
+      return;
+    }
+    newUsers.push(user.userId);
+    await addUserChats(user.userId, chatData.key);
+    addedUser = user?.fullName;
+  });
+  if (!newUsers.length) return;
+  await updateChatData(chatData.key, loggedInUserData.userId, {
+    users: existingUsers.concat(newUsers),
+  });
+  const moreUsers =
+    newUsers.length > 1 ? `and ${newUsers.length - 1} new users ` : "";
+  const messageText = `${loggedInUserData.fullName} added ${addedUser} ${moreUsers}to chat`;
+  await sendInfoMessage(chatData.key, loggedInUserData.userId, messageText);
+};
+
+export const sendPushNotificationsToUsers = async (
+  chatData,
+  title,
+  body,
+  chatId
+) => {
+  const users = chatData.users;
+  users.forEach(async (user) => {
+    const tokens = await getUserPushToken(user);
+    for (let key in tokens) {
+      const token = tokens[key];
+      await fetch(`https://exp.host/--/api/v2/push/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: token,
+          title,
+          body,
+          data: { chatId },
+        }),
+      });
+    }
+  });
 };

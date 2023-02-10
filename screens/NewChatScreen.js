@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   FlatList,
 } from "react-native";
-import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { HeaderButtons, Item } from "react-navigation-header-buttons";
 import CustomHeaderButtton from "../components/CustomHeaderButtton";
 import { FontAwesome } from "@expo/vector-icons";
@@ -22,6 +21,7 @@ import { setStoredUsers } from "../store/userSlice";
 import ProfileImage from "../components/ProfileImage";
 
 export default function NewChatScreen({ navigation, route }) {
+  const { existingUsers } = route.params || {};
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState();
   const [noResultFound, setNoResultFound] = useState(false);
@@ -33,10 +33,15 @@ export default function NewChatScreen({ navigation, route }) {
   const selectedUserFlatList = useRef();
 
   const isGroupChat = route.params && route.params.isGroupChat;
+  const chatId = route.params && route.params.chatId;
+  const isNewChat = !chatId;
 
   const dispatch = useDispatch();
-  const isGroupBtnDisable = selectedUsers.length === 0 || !chatName;
+  const isGroupBtnDisable =
+    selectedUsers.length === 0 || (isNewChat && !chatName);
   useEffect(() => {
+    const btn = isNewChat ? "Create" : "Add";
+    const screen = isNewChat ? "ChatListScreen" : "chatSetting";
     navigation.setOptions({
       headerTitle: isGroupChat ? "Add Participants" : "New Chat",
       headerLeft: () => (
@@ -48,11 +53,12 @@ export default function NewChatScreen({ navigation, route }) {
         <HeaderButtons HeaderButtonComponent={CustomHeaderButtton}>
           {isGroupChat && (
             <Item
-              title="Create"
+              title={btn}
               onPress={() => {
-                navigation.navigate("ChatListScreen", {
+                navigation.navigate(screen, {
                   selectedUsers,
                   chatName,
+                  chatId,
                 });
               }}
               disabled={isGroupBtnDisable}
@@ -102,16 +108,18 @@ export default function NewChatScreen({ navigation, route }) {
       {isGroupChat && (
         <View style={styles.chatNameContainer}>
           <>
-            <View style={styles.inputContainer}>
-              <TextInput
-                value={chatName}
-                onChangeText={(text) => setChatName(text)}
-                style={styles.textBox}
-                placeholder="Enter a name for your chat"
-                autoCorrect={false}
-                autoComplete={false}
-              />
-            </View>
+            {isNewChat && (
+              <View style={styles.inputContainer}>
+                <TextInput
+                  value={chatName}
+                  onChangeText={(text) => setChatName(text)}
+                  style={styles.textBox}
+                  placeholder="Enter a name for your chat"
+                  autoCorrect={false}
+                  autoComplete={false}
+                />
+              </View>
+            )}
             {!!selectedUsers.length && (
               <View style={styles.selectedUserContainer}>
                 <FlatList
@@ -164,6 +172,9 @@ export default function NewChatScreen({ navigation, route }) {
           data={Object.keys(users)}
           renderItem={(user) => {
             const userData = users[user.item];
+            if (existingUsers && existingUsers.includes(user.item)) {
+              return;
+            }
             return (
               <DataItem
                 onPress={() => onSelectUser(userData.userId)}

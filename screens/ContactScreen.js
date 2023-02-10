@@ -21,7 +21,6 @@ export default function ContactScreen(props) {
   const [commonChats, setCommonChats] = useState([]);
   useEffect(() => {
     const getChats = async () => {
-      console.log(selectedUser, "selectedUser");
       const chats = await getUserChats(selectedUser.userId);
       setCommonChats(
         Object.values(chats).filter(

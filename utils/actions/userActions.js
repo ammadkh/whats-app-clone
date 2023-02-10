@@ -3,12 +3,15 @@ import {
   get,
   getDatabase,
   orderByChild,
+  push,
   query,
   ref,
   remove,
   startAt,
+  set,
 } from "firebase/database";
-import { async } from "validate.js";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
 import { getFirebaseApp } from "../firebaseHelper";
 
 export const getUser = async (userId) => {
@@ -37,11 +40,21 @@ export const getUserChats = async (userId) => {
 
 export const deleteUserChats = async (userId, chatId) => {
   try {
-    console.log(userId, chatId, "xxxxxxxx");
     const app = getFirebaseApp();
     const db = getDatabase(app);
     const userRef = ref(db, `userChat/${userId}/${chatId}`);
     await remove(userRef);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const addUserChats = async (userId, chatId) => {
+  try {
+    const app = getFirebaseApp();
+    const db = getDatabase(app);
+    const userRef = ref(db, `userChat/${userId}`);
+    await push(userRef, chatId);
   } catch (error) {
     console.log(error);
   }
@@ -65,6 +78,61 @@ export const searchUser = async (search) => {
       return snapshot.val();
     }
     return {};
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const savePushToken = async (userData) => {
+  if (!Device.isDevice) {
+    return;
+  }
+  token = (await Notifications.getExpoPushTokenAsync()).data;
+  const tokenData = { ...userData.pushTokens } || {};
+  const tokenArray = Object.values(tokenData);
+
+  if (tokenArray.includes(token)) {
+    return;
+  }
+  tokenArray.push(token);
+  for (let i = 0; i < tokenArray.length; i++) {
+    tokenData[i] = tokenArray[i];
+  }
+  const app = getFirebaseApp();
+  const db = getDatabase(app);
+  const userRef = ref(db, `users/${userData.userId}/pushTokens`);
+  await set(userRef, tokenData);
+};
+
+export const removePushToken = async (userData) => {
+  if (!Device.isDevice) {
+    return;
+  }
+  token = (await Notifications.getExpoPushTokenAsync()).data;
+  const tokenData = await getUserPushToken(userData.userId);
+  for (let key in tokenData) {
+    if (tokenData[key] === token) {
+      delete tokenData[key];
+      break;
+    }
+  }
+  const app = getFirebaseApp();
+  const db = getDatabase(app);
+  const userRef = ref(db, `users/${userData.userId}/pushTokens`);
+  await set(userRef, tokenData);
+};
+
+export const getUserPushToken = async (userId) => {
+  try {
+    if (!Device.isDevice) {
+      return;
+    }
+    token = (await Notifications.getExpoPushTokenAsync()).data;
+    const app = getFirebaseApp();
+    const db = getDatabase(app);
+    const userRef = ref(db, `users/${userId}/pushTokens`);
+    const snapshot = await get(userRef);
+    return snapshot?.val() || {};
   } catch (error) {
     console.log(error);
   }

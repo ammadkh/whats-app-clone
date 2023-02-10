@@ -57,7 +57,7 @@ export default function SignUpForm() {
       setError(null);
       await dispatch(action);
     } catch (error) {
-      console.log(error.message, "xxx");
+      console.log(error.message);
       setError(error.message);
       setIsLoading(false);
     }

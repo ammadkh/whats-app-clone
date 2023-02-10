@@ -5,11 +5,13 @@ import ProfileImage from "./ProfileImage";
 import { Ionicons, AntDesign } from "@expo/vector-icons";
 
 export default function DataItem(props) {
-  const { title, subTitle, image, type, isChecked, icon } = props;
+  const { title, subTitle, image, type, isChecked, icon, hideImage } = props;
   return (
     <TouchableWithoutFeedback onPress={props.onPress}>
       <View style={styles.container}>
-        {!icon && <ProfileImage size={40} uri={image}></ProfileImage>}
+        {!icon && !hideImage && (
+          <ProfileImage size={40} uri={image}></ProfileImage>
+        )}
         {icon && (
           <View style={styles.leftIconContainer}>
             <AntDesign name={icon} size={20} color={colors.blue} />

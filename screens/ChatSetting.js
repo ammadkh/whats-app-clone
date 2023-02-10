@@ -1,4 +1,4 @@
-import React, { useReducer, useCallback, useState } from "react";
+import React, { useReducer, useCallback, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -14,6 +14,7 @@ import ProfileImage from "../components/ProfileImage";
 import SubmitButton from "../components/SubmitButton";
 import colors from "../constants/colors";
 import {
+  addUsersToChat,
   removeUserFromChat,
   updateChatData,
 } from "../utils/actions/chatAction";
@@ -29,7 +30,25 @@ export default function ChatSetting(props) {
   const [isLoading, setIsLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
 
-  console.log(chatData, "cd", chatId);
+  const storedStarredMessages = useSelector(
+    (state) => state.messages.starredMessages[chatId]
+  );
+
+  const selectedUsers = props.route.params && props.route.params.selectedUsers;
+  useEffect(() => {
+    if (!selectedUsers) return;
+    const selectedUserData = [];
+    selectedUsers.forEach((uid) => {
+      if (!storedUsers[uid]) {
+        console.log("no user data found");
+        return;
+      }
+      const userData = storedUsers[uid];
+      selectedUserData.push(userData);
+    });
+
+    addUsersToChat(userData, selectedUserData, chatData);
+  }, [selectedUsers]);
 
   const initialState = {
     inputValues: {
@@ -108,8 +127,19 @@ export default function ChatSetting(props) {
           <Text style={styles.heading}>
             {chatData.users.length} participants{" "}
           </Text>
-          <DataItem title="Add users" icon="plus" type="button" />
-          {chatData.users.map((userId) => {
+          <DataItem
+            title="Add users"
+            icon="plus"
+            type="button"
+            onPress={() =>
+              props.navigation.navigate("newChatScreen", {
+                isGroupChat: true,
+                existingUsers: chatData.users,
+                chatId,
+              })
+            }
+          />
+          {chatData.users.slice(0, 4).map((userId) => {
             const currentUser = storedUsers[userId];
             return (
               <DataItem
@@ -128,6 +158,21 @@ export default function ChatSetting(props) {
               />
             );
           })}
+          {chatData.users.length > 4 && (
+            <DataItem
+              title="View More"
+              hideImage={true}
+              type="link"
+              onPress={() =>
+                props.navigation.navigate("dataList", {
+                  title: "Participants",
+                  data: chatData.users,
+                  type: "users",
+                  chatId,
+                })
+              }
+            ></DataItem>
+          )}
         </View>
         {successMsg && <Text>Saved!</Text>}
         {isLoading ? (
@@ -142,6 +187,18 @@ export default function ChatSetting(props) {
             ></SubmitButton>
           )
         )}
+        <DataItem
+          title="Starred Messages"
+          hideImage={true}
+          type="link"
+          onPress={() =>
+            props.navigation.navigate("dataList", {
+              title: "Starred Messages",
+              data: Object.values(storedStarredMessages),
+              type: "messages",
+            })
+          }
+        ></DataItem>
       </ScrollView>
       <SubmitButton
         color="red"
